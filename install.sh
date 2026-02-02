@@ -1,9 +1,9 @@
 #!/bin/bash
 
 SERVICE_NAME="llama-server.service"
-SERVICE_FILE="${INSTALL_DIR}/${SERVICE_NAME}"
+SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}"
 ENV_FILE="/etc/systemd/system/llama-server.env"
-INSTALL_DIR=$(dirname "$(realpath "$0")")
+INSTALL_DIR=$(dirname "$(readlink -f "$0")")
 TEMPLATE_FILE="${INSTALL_DIR}/.env.template"
 
 echo "Installing llama.cpp server daemon..."
@@ -47,7 +47,7 @@ fi
 
 # Copy service file
 echo "Copying service file to ${SERVICE_FILE}..."
-cp "${SERVICE_FILE}" "${SERVICE_FILE}"
+cp "${INSTALL_DIR}/${SERVICE_NAME}" "${SERVICE_FILE}"
 
 # Create environment file from template
 echo "Creating environment file..."
