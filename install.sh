@@ -22,8 +22,18 @@ if [ ! -f "${SOURCE_SERVICE_FILE}" ]; then
     exit 1
 fi
 
-# Copy service file
+# Copy service file with variable substitution
 echo "Copying service file to ${SERVICE_FILE}..."
+# Read environment variables and substitute in service file
+while IFS='=' read -r key value; do
+    # Skip comments and empty lines
+    [[ "$key" =~ ^#.*$ ]] && continue
+    [[ -z "$key" ]] && continue
+    # Remove quotes from value
+    value=$(echo "$value" | sed "s/[\"']//g")
+    # Substitute in service file
+    sed -i "s|\${${key}}|${value}|g" "${SOURCE_SERVICE_FILE}"
+done < "${SOURCE_ENV_FILE}"
 cp "${SOURCE_SERVICE_FILE}" "${SERVICE_FILE}"
 
 # Copy environment file
