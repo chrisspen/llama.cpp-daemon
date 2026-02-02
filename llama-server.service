@@ -1,0 +1,21 @@
+[Unit]
+Description=llama.cpp Server Daemon
+After=network.target
+
+[Service]
+Type=simple
+User=${SERVICE_USER}
+Group=${SERVICE_GROUP}
+WorkingDirectory=${LLAMCPP_DIR}
+ExecStart=${BUILD_DIR}/llama-server \
+  -m ${MODEL_PATH} \
+  --host ${HOST} --port ${PORT} \
+  -ngl ${NGL_LEVEL} --ctx-size ${CONTEXT_SIZE} ${JINJA_ENABLED}
+Restart=${RESTART_MODE}
+RestartSec=${RESTART_SECONDS}
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=${SERVICE_NAME}
+
+[Install]
+WantedBy=multi-user.target
