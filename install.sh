@@ -7,6 +7,31 @@ INSTALL_DIR=$(dirname "$(realpath "$0")")
 TEMPLATE_FILE="${INSTALL_DIR}/.env.template"
 
 echo "Installing llama.cpp server daemon..."
+echo "Usage: sudo ./install.sh [--model PATH] [--llamacpp_dir PATH]"
+echo "Options:"
+echo "  --model PATH       Path to .gguf model file (optional)"
+echo "  --llamacpp_dir PATH Path to llama.cpp directory (optional)"
+
+# Parse command line arguments
+MODEL_PATH=""
+LLAMCPP_DIR=""
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --model)
+            MODEL_PATH="$2"
+            shift 2
+            ;;
+        --llamacpp_dir)
+            LLAMCPP_DIR="$2"
+            shift 2
+            ;;
+        *)
+            echo "Unknown option: $1"
+            exit 1
+            ;;
+    esac
+done
 
 # Check if running as root
 if [ "$EUID" -ne 0 ]; then
@@ -27,12 +52,24 @@ cp "${TEMPLATE_FILE}" "${SERVICE_FILE}"
 # Create environment file from template
 echo "Creating environment file..."
 cp "${TEMPLATE_FILE}" "${ENV_FILE}"
-# Prompt for required values
-read -p "Enter MODEL_PATH (path to .gguf file): " MODEL_PATH
-read -p "Enter LLAMCPP_DIR (path to llama.cpp directory): " LLAMCPP_DIR
+
+# Prompt for required values if not provided via command line
+if [ -z "${MODEL_PATH}" ]; then
+    read -p "Enter MODEL_PATH (path to .gguf file): " MODEL_PATH
+fi
+if [ -z "${LLAMCPP_DIR}" ]; then
+    read -p "Enter LLAMCPP_DIR (path to llama.cpp directory): " LLAMCPP_DIR
+fi
+
+# Validate values are set
+if [ -z "${MODEL_PATH}" ] || [ -z "${LLAMCPP_DIR}" ]; then
+    echo "ERROR: MODEL_PATH and LLAMCPP_DIR are required"
+    exit 1
+fi
+
 # Replace template values
-sed -i "s|MODEL_PATH=.*|MODEL_PATH=${model_path}|" "${ENV_FILE}"
-sed -i "s|LLAMCPP_DIR=.*|LLAMCPP_DIR=${llamacpp_dir}|" "${ENV_FILE}"
+sed -i "s|MODEL_PATH=.*|MODEL_PATH=${MODEL_PATH}|" "${ENV_FILE}"
+sed -i "s|LLAMCPP_DIR=.*|LLAMCPP_DIR=${LLAMCPP_DIR}|" "${ENV_FILE}"
 
 # Check if llama.cpp directory exists
 echo "Checking for llama.cpp directory..."
