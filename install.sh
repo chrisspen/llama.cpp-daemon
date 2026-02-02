@@ -28,8 +28,8 @@ cp "${TEMPLATE_FILE}" "${SERVICE_FILE}"
 echo "Creating environment file..."
 cp "${TEMPLATE_FILE}" "${ENV_FILE}"
 # Prompt for required values
-read -p "Enter MODEL_PATH (path to .gguf file): " model_path
-read -p "Enter LLAMCPP_DIR (path to llama.cpp directory): " llamacpp_dir
+read -p "Enter MODEL_PATH (path to .gguf file): " MODEL_PATH
+read -p "Enter LLAMCPP_DIR (path to llama.cpp directory): " LLAMCPP_DIR
 # Replace template values
 sed -i "s|MODEL_PATH=.*|MODEL_PATH=${model_path}|" "${ENV_FILE}"
 sed -i "s|LLAMCPP_DIR=.*|LLAMCPP_DIR=${llamacpp_dir}|" "${ENV_FILE}"
