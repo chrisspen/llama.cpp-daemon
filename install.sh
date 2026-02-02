@@ -3,7 +3,7 @@
 SERVICE_NAME="llama-server.service"
 SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}"
 ENV_FILE="/etc/systemd/system/${SERVICE_NAME}.env"
-INSTALL_DIR="/mnt/boreas_share/home/chris/git/llama.cpp-daemon"
+INSTALL_DIR=$(dirname "$(realpath "$0")")
 TEMPLATE_FILE="${INSTALL_DIR}/.env.template"
 SOURCE_SERVICE_FILE="${INSTALL_DIR}/${SERVICE_NAME}"
 SOURCE_ENV_FILE="${INSTALL_DIR}/.env"
