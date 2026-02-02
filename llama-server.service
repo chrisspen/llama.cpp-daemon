@@ -4,14 +4,11 @@ After=network.target
 
 [Service]
 Type=simple
-User=%U
-Group=%g
-WorkingDirectory=%h/git/llama.cpp
-EnvironmentFile=-%h/git/llama.cpp-daemon/.env
-ExecStart=%h/git/llama.cpp/build/bin/llama-server \
-  -m ${MODEL_PATH} \
-  --host ${HOST} --port ${PORT} \
-  -ngl ${NGL_LEVEL} --ctx-size ${CONTEXT_SIZE} ${JINJA_ENABLED}
+EnvironmentFile=/etc/systemd/system/llama-server.env
+ExecStart=${LLAMCPP_DIR}/build/bin/llama-server \
+  -m "${MODEL_PATH}" \
+  --host "${HOST}" --port "${PORT}" \
+  -ngl "${NGL_LEVEL}" --ctx-size "${CONTEXT_SIZE}" "${JINJA_ENABLED}"
 Restart=${RESTART_MODE}
 RestartSec=${RESTART_SECONDS}
 StandardOutput=journal

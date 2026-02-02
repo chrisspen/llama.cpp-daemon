@@ -2,11 +2,9 @@
 
 SERVICE_NAME="llama-server.service"
 SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}"
-ENV_FILE="/etc/systemd/system/${SERVICE_NAME}.env"
+ENV_FILE="/etc/systemd/system/llama-server.env"
 INSTALL_DIR=$(dirname "$(realpath "$0")")
 TEMPLATE_FILE="${INSTALL_DIR}/.env.template"
-SOURCE_SERVICE_FILE="${INSTALL_DIR}/${SERVICE_NAME}"
-SOURCE_ENV_FILE="${INSTALL_DIR}/.env"
 
 echo "Installing llama.cpp server daemon..."
 
@@ -17,30 +15,54 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 # Check if source file exists
-if [ ! -f "${SOURCE_SERVICE_FILE}" ]; then
-    echo "Error: ${SOURCE_SERVICE_FILE} not found"
+if [ ! -f "${TEMPLATE_FILE}" ]; then
+    echo "Error: ${TEMPLATE_FILE} not found"
     exit 1
 fi
 
 # Copy service file
 echo "Copying service file to ${SERVICE_FILE}..."
-cp "${SOURCE_SERVICE_FILE}" "${SERVICE_FILE}"
+cp "${TEMPLATE_FILE}" "${SERVICE_FILE}"
 
-# Copy environment file
-echo "Copying environment file to ${ENV_FILE}..."
-if [ ! -f "${SOURCE_ENV_FILE}" ]; then
-    echo "Creating .env file from template..."
-    cp "${TEMPLATE_FILE}" "${SOURCE_ENV_FILE}"
-    # Prompt for required values
-    read -p "Enter MODEL_PATH (path to .gguf file): " model_path
-    read -p "Enter LLAMCPP_DIR (path to llama.cpp directory): " llamacpp_dir
-    # Replace template values
-    sed -i "s|MODEL_PATH=.*|MODEL_PATH=${model_path}|" "${SOURCE_ENV_FILE}"
-    sed -i "s|LLAMCPP_DIR=.*|LLAMCPP_DIR=${llamacpp_dir}|" "${SOURCE_ENV_FILE}"
-    sed -i "s|BUILD_DIR=.*|BUILD_DIR=${llamacpp_dir}/build/bin|" "${SOURCE_ENV_FILE}"
+# Create environment file from template
+echo "Creating environment file..."
+cp "${TEMPLATE_FILE}" "${ENV_FILE}"
+# Prompt for required values
+read -p "Enter MODEL_PATH (path to .gguf file): " model_path
+read -p "Enter LLAMCPP_DIR (path to llama.cpp directory): " llamacpp_dir
+# Replace template values
+sed -i "s|MODEL_PATH=.*|MODEL_PATH=${model_path}|" "${ENV_FILE}"
+sed -i "s|LLAMCPP_DIR=.*|LLAMCPP_DIR=${llamacpp_dir}|" "${ENV_FILE}"
+
+# Check if llama.cpp directory exists
+echo "Checking for llama.cpp directory..."
+if [ ! -d "${LLAMCPP_DIR}" ]; then
+    echo "ERROR: llama.cpp directory not found at ${LLAMCPP_DIR}"
+    echo "Please download and build llama.cpp:"
+    echo "  cd ${LLAMCPP_DIR}"
+    echo "  git clone https://github.com/ggerganov/llama.cpp.git ."
+    echo "  git pull"
+    echo "  make"
+    exit 1
 fi
 
-cp "${SOURCE_ENV_FILE}" "${ENV_FILE}"
+# Check if model file exists
+echo "Checking for model file..."
+if [ ! -f "${MODEL_PATH}" ]; then
+    echo "ERROR: Model file not found at ${MODEL_PATH}"
+    echo "Please specify a valid .gguf file path"
+    exit 1
+fi
+
+# Check if llama-server binary exists
+echo "Checking for llama-server binary..."
+if [ ! -f "${LLAMCPP_DIR}/build/bin/llama-server" ]; then
+    echo "ERROR: llama-server binary not found at ${LLAMCPP_DIR}/build/bin/llama-server"
+    echo "Please build llama.cpp first:"
+    echo "  cd ${LLAMCPP_DIR}"
+    echo "  make"
+    exit 1
+fi
 
 # Reload systemd
 echo "Reloading systemd daemon configuration..."
