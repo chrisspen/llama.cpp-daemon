@@ -55,6 +55,18 @@ sudo journalctl -u llama-server -f
 
 ## Usage
 
+### Management Scripts
+
+You can use convenience scripts for common operations:
+
+```bash
+# Show detailed service status
+./status.sh
+
+# Monitor logs in real-time
+./logs.sh
+```
+
 ### Starting the service
 
 ```bash
@@ -102,6 +114,9 @@ sudo journalctl -u llama-server -n 100
 
 # View logs with timestamps
 sudo journalctl -u llama-server -t llama-server
+
+# Use the logs script
+logs
 ```
 
 ## Configuration
@@ -210,6 +225,8 @@ This removes the systemd service file and environment configuration.
 
 - `install.sh` - Installation script
 - `uninstall.sh` - Uninstallation script
+- `status.sh` - Service status and configuration viewer
+- `logs.sh` - Real-time log monitor
 - `llama-server.service` - Systemd service definition
 - `.env.template` - Environment configuration template
 - `README.md` - This file

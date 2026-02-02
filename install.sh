@@ -22,43 +22,25 @@ if [ ! -f "${SOURCE_SERVICE_FILE}" ]; then
     exit 1
 fi
 
-# Copy service file with variable substitution
+# Copy service file
 echo "Copying service file to ${SERVICE_FILE}..."
-# Read environment variables and substitute in service file
-while IFS='=' read -r key value; do
-    # Skip comments and empty lines
-    [[ "$key" =~ ^#.*$ ]] && continue
-    [[ -z "$key" ]] && continue
-    # Remove quotes from value
-    value=$(echo "$value" | sed "s/[\"']//g")
-    # Substitute in service file
-    sed -i "s|\${${key}}|${value}|g" "${SOURCE_SERVICE_FILE}"
-done < "${SOURCE_ENV_FILE}"
 cp "${SOURCE_SERVICE_FILE}" "${SERVICE_FILE}"
 
 # Copy environment file
 echo "Copying environment file to ${ENV_FILE}..."
-if [ -f "${SOURCE_ENV_FILE}" ]; then
-    cp "${SOURCE_ENV_FILE}" "${ENV_FILE}"
-else
-    echo "Creating default environment file..."
-
+if [ ! -f "${SOURCE_ENV_FILE}" ]; then
+    echo "Creating .env file from template..."
+    cp "${TEMPLATE_FILE}" "${SOURCE_ENV_FILE}"
     # Prompt for required values
     read -p "Enter MODEL_PATH (path to .gguf file): " model_path
     read -p "Enter LLAMCPP_DIR (path to llama.cpp directory): " llamacpp_dir
-
-    # Generate environment file from template
-    cat "${TEMPLATE_FILE}" > "${ENV_FILE}"
-
     # Replace template values
-    sed -i "s|MODEL_PATH=.*|MODEL_PATH=${model_path}|" "${ENV_FILE}"
-    sed -i "s|LLAMCPP_DIR=.*|LLAMCPP_DIR=${llamacpp_dir}|" "${ENV_FILE}"
-
-    # Update BUILD_DIR based on LLAMCPP_DIR
-    sed -i "s|BUILD_DIR=.*|BUILD_DIR=${llamacpp_dir}/build/bin|" "${ENV_FILE}"
-
-    echo "Environment file created with your values"
+    sed -i "s|MODEL_PATH=.*|MODEL_PATH=${model_path}|" "${SOURCE_ENV_FILE}"
+    sed -i "s|LLAMCPP_DIR=.*|LLAMCPP_DIR=${llamacpp_dir}|" "${SOURCE_ENV_FILE}"
+    sed -i "s|BUILD_DIR=.*|BUILD_DIR=${llamacpp_dir}/build/bin|" "${SOURCE_ENV_FILE}"
 fi
+
+cp "${SOURCE_ENV_FILE}" "${ENV_FILE}"
 
 # Reload systemd
 echo "Reloading systemd daemon configuration..."
@@ -74,5 +56,7 @@ echo "Checking service status..."
 systemctl status "${SERVICE_NAME}" --no-pager
 
 echo "Installation complete!"
+echo "Use './status.sh' to check service status"
+echo "Use './logs.sh' to monitor logs"
 echo "Use 'systemctl status llama-server' to check service status"
 echo "Use 'journalctl -u llama-server -f' to view logs"
