@@ -5,15 +5,11 @@ After=network.target
 [Service]
 Type=simple
 EnvironmentFile=/etc/systemd/system/llama-server.env
-ExecStart=${LLAMCPP_DIR}/build/bin/llama-server \
-  -m "${MODEL_PATH}" \
-  --host "${HOST}" --port "${PORT}" \
-  -ngl "${NGL_LEVEL}" --ctx-size "${CONTEXT_SIZE}" "${JINJA_ENABLED}"
+ExecStart=/bin/bash -c 'source /etc/systemd/system/llama-server.env; exec ${LLAMCPP_DIR}/build/bin/llama-server -m "${MODEL_PATH}" --host "${HOST}" --port "${PORT}" -ngl "${NGL_LEVEL}" --ctx-size "${CONTEXT_SIZE}" "${JINJA_ENABLED}"'
 Restart=${RESTART_MODE}
 RestartSec=${RESTART_SECONDS}
 StandardOutput=journal
 StandardError=journal
-SyslogIdentifier=${SERVICE_NAME}
 
 [Install]
 WantedBy=multi-user.target
