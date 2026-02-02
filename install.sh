@@ -60,6 +60,15 @@ fi
 if [ -z "${LLAMCPP_DIR}" ]; then
     read -p "Enter LLAMCPP_DIR (path to llama.cpp directory): " LLAMCPP_DIR
 fi
+if [ -z "${RESTART_MODE}" ]; then
+    RESTART_MODE="always"
+fi
+if [ -z "${RESTART_SECONDS}" ]; then
+    RESTART_SECONDS="5s"
+fi
+if [ -z "${JINJA_ENABLED}" ]; then
+    JINJA_ENABLED="true"
+fi
 
 # Validate values are set
 if [ -z "${MODEL_PATH}" ] || [ -z "${LLAMCPP_DIR}" ]; then
@@ -67,9 +76,16 @@ if [ -z "${MODEL_PATH}" ] || [ -z "${LLAMCPP_DIR}" ]; then
     exit 1
 fi
 
-# Replace template values
+# Replace template values in environment file
 sed -i "s|MODEL_PATH=.*|MODEL_PATH=${MODEL_PATH}|" "${ENV_FILE}"
 sed -i "s|LLAMCPP_DIR=.*|LLAMCPP_DIR=${LLAMCPP_DIR}|" "${ENV_FILE}"
+sed -i "s|RESTART_MODE=.*|RESTART_MODE=${RESTART_MODE}|" "${ENV_FILE}"
+sed -i "s|RESTART_SECONDS=.*|RESTART_SECONDS=${RESTART_SECONDS}|" "${ENV_FILE}"
+sed -i "s|JINJA_ENABLED=.*|JINJA_ENABLED=${JINJA_ENABLED}|" "${ENV_FILE}"
+
+# Replace template values in service file
+sed -i "s|RESTART_MODE=.*|Restart=always|" "${SERVICE_FILE}"
+sed -i "s|RESTART_SECONDS=.*|RestartSec=5s|" "${SERVICE_FILE}"
 
 # Check if llama.cpp directory exists
 echo "Checking for llama.cpp directory..."
