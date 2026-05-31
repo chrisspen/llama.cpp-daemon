@@ -1,0 +1,26 @@
+# Installed by install.sh to /etc/logrotate.d/llama-server
+#
+# Rolls the daemon log over once per day. The rotated file is suffixed with the
+# day-of-week number (0=Sunday .. 6=Saturday), so files cycle weekly:
+#   llama-server.log.0  llama-server.log.1  ...  llama-server.log.6
+#
+# maxsize is a hard guardrail: if the log exceeds it before the daily run,
+# logrotate rotates early so a single day can't fill the disk.
+/var/log/llama-server.log {
+    su root root
+    daily
+    rotate 1
+    maxsize 100M
+    missingok
+    notifempty
+    # llama-server holds the file open and has no reopen signal, so copy+truncate
+    # in place rather than rename (which would leave it writing to the old inode).
+    copytruncate
+    nocompress
+    lastaction
+        # Rename the just-rotated file to a day-of-week number (0..6).
+        if [ -f /var/log/llama-server.log.1 ]; then
+            mv -f /var/log/llama-server.log.1 "/var/log/llama-server.log.$(date +%w)"
+        fi
+    endscript
+}
