@@ -22,6 +22,8 @@ Ensure llama.cpp is built and the model file exists:
 
 ```bash
 # Verify llama.cpp is built
+cd ~/git/llama.cpp
+cmake --build build --config Release -j 24
 ls ~/git/llama.cpp/build/bin/llama-server
 
 # Verify model file exists
