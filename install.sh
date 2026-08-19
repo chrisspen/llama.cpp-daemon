@@ -78,15 +78,25 @@ else
     fi
 fi
 
-# Defaults for anything still unset
-HOST="${HOST:-0.0.0.0}"
-PORT="${PORT:-8081}"
-CONTEXT_SIZE="${CONTEXT_SIZE:-65536}"
-NGL_LEVEL="${NGL_LEVEL:-99}"
-JINJA_ENABLED="${JINJA_ENABLED:-true}"
-RESTART_MODE="${RESTART_MODE:-always}"
-RESTART_SECONDS="${RESTART_SECONDS:-5s}"
-LOG_PATH="${LOG_PATH:-/var/log/llama-server.log}"
+# Defaults are applied ONLY for keys that are genuinely absent everywhere.
+# A key already present in the live env file is NEVER replaced by a default --
+# see upsert_env() below. This is what keeps hand-tuned live settings safe.
+apply_default() {
+    # apply_default VAR DEFAULT -- set VAR only if currently empty/unset
+    local __var="$1" __def="$2"
+    if [ -z "${!__var}" ]; then
+        printf -v "${__var}" '%s' "${__def}"
+    fi
+}
+
+apply_default HOST "0.0.0.0"
+apply_default PORT "8081"
+apply_default CONTEXT_SIZE "65536"
+apply_default NGL_LEVEL "99"
+apply_default JINJA_ENABLED "true"
+apply_default RESTART_MODE "always"
+apply_default RESTART_SECONDS "5s"
+apply_default LOG_PATH "/var/log/llama-server.log"
 
 # Final sanity check
 if [ -z "${MODEL_PATH}" ] || [ -z "${LLAMCPP_DIR}" ]; then
@@ -102,17 +112,56 @@ else
     echo "Environment file already exists, updating in place..."
 fi
 
-# Fill in resolved values
-sed -i "s|MODEL_PATH=.*|MODEL_PATH=${MODEL_PATH}|" "${ENV_FILE}"
-sed -i "s|LLAMCPP_DIR=.*|LLAMCPP_DIR=${LLAMCPP_DIR}|" "${ENV_FILE}"
-sed -i "s|HOST=.*|HOST=\"${HOST}\"|" "${ENV_FILE}"
-sed -i "s|PORT=.*|PORT=\"${PORT}\"|" "${ENV_FILE}"
-sed -i "s|CONTEXT_SIZE=.*|CONTEXT_SIZE=\"${CONTEXT_SIZE}\"|" "${ENV_FILE}"
-sed -i "s|NGL_LEVEL=.*|NGL_LEVEL=\"${NGL_LEVEL}\"|" "${ENV_FILE}"
-sed -i "s|RESTART_MODE=.*|RESTART_MODE=${RESTART_MODE}|" "${ENV_FILE}"
-sed -i "s|RESTART_SECONDS=.*|RESTART_SECONDS=${RESTART_SECONDS}|" "${ENV_FILE}"
-sed -i "s|JINJA_ENABLED=.*|JINJA_ENABLED=${JINJA_ENABLED}|" "${ENV_FILE}"
-sed -i "s|LOG_PATH=.*|LOG_PATH=\"${LOG_PATH}\"|" "${ENV_FILE}"
+# Back up the existing live env file before touching it, so any mistake here is
+# always recoverable.
+if [ -f "${ENV_FILE}" ]; then
+    ENV_BACKUP="${ENV_FILE}.bak-$(date +%Y%m%d%H%M%S)"
+    cp -p "${ENV_FILE}" "${ENV_BACKUP}"
+    echo "Backed up existing env file to ${ENV_BACKUP}"
+fi
+
+# upsert_env KEY VALUE [QUOTE]
+#
+# Writes KEY=VALUE into the live env file WITHOUT clobbering unrelated settings:
+#   - Only the single matching line is rewritten (anchored at start of line, so
+#     LLAMA_API_KEY is never matched by a rule for API_KEY, etc).
+#   - Commented-out lines (#KEY=...) are left untouched as history.
+#   - If the key is absent, it is appended rather than overwriting anything.
+#   - Values are written via awk with the replacement passed as a variable, so
+#     characters that are special to sed (| & / \) in secrets survive intact.
+upsert_env() {
+    local key="$1" value="$2" quote="${3:-}"
+    local rendered
+    if [ -n "${quote}" ]; then
+        rendered="${key}=\"${value}\""
+    else
+        rendered="${key}=${value}"
+    fi
+
+    if grep -qE "^${key}=" "${ENV_FILE}" 2>/dev/null; then
+        awk -v key="${key}" -v repl="${rendered}" '
+            !done && $0 ~ "^" key "=" { print repl; done=1; next }
+            { print }
+        ' "${ENV_FILE}" > "${ENV_FILE}.tmp" && mv "${ENV_FILE}.tmp" "${ENV_FILE}"
+    else
+        printf '%s\n' "${rendered}" >> "${ENV_FILE}"
+    fi
+}
+
+# Fill in resolved values. Every write goes through upsert_env, which preserves
+# any key it is not explicitly told about (e.g. LLAMA_API_KEY,
+# LLAMA_ARG_N_PARALLEL) instead of regenerating the file from the template.
+echo "Updating ${ENV_FILE} (preserving settings not managed here)..."
+upsert_env MODEL_PATH      "${MODEL_PATH}"
+upsert_env LLAMCPP_DIR     "${LLAMCPP_DIR}"
+upsert_env HOST            "${HOST}"            quote
+upsert_env PORT            "${PORT}"            quote
+upsert_env CONTEXT_SIZE    "${CONTEXT_SIZE}"    quote
+upsert_env NGL_LEVEL       "${NGL_LEVEL}"       quote
+upsert_env RESTART_MODE    "${RESTART_MODE}"
+upsert_env RESTART_SECONDS "${RESTART_SECONDS}"
+upsert_env JINJA_ENABLED   "${JINJA_ENABLED}"
+upsert_env LOG_PATH        "${LOG_PATH}"        quote
 
 # Replace template values in service file
 sed -i "s|RESTART_MODE=.*|Restart=always|" "${SERVICE_FILE}"
