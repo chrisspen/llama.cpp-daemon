@@ -5,7 +5,7 @@ After=network.target
 [Service]
 Type=simple
 EnvironmentFile=/etc/systemd/system/llama-server.env
-ExecStart=/bin/bash -c 'source /etc/systemd/system/llama-server.env; exec ${LLAMCPP_DIR}/build/bin/llama-server -m "${MODEL_PATH}" --host "${HOST}" --port "${PORT}" -ngl "${NGL_LEVEL}" --ctx-size "${CONTEXT_SIZE}" $([ "${JINJA_ENABLED}" = "true" ] && echo "--jinja" || true)'
+ExecStart=/bin/bash -c 'source /etc/systemd/system/llama-server.env; exec ${LLAMCPP_DIR}/build/bin/llama-server -m "${MODEL_PATH}" --host "${HOST}" --port "${PORT}" -ngl "${NGL_LEVEL}" --ctx-size "${CONTEXT_SIZE}" --log-file "${LOG_PATH}" --log-timestamps $([ "${JINJA_ENABLED}" = "true" ] && echo "--jinja" || true)'
 Restart=always
 RestartSec=5s
 StandardOutput=journal

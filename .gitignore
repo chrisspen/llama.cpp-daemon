@@ -1,7 +1,7 @@
 *.out
 *.geany
 .venv
-.env
+.env*
 __pycache__
 .claude
 .opencode

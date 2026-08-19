@@ -2,7 +2,8 @@
 
 SERVICE_NAME="llama-server.service"
 SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}"
-ENV_FILE="/etc/systemd/system/${SERVICE_NAME}.env"
+ENV_FILE="/etc/systemd/system/llama-server.env"
+LOGROTATE_FILE="/etc/logrotate.d/llama-server"
 
 echo "Uninstalling llama.cpp server daemon..."
 
@@ -27,6 +28,10 @@ rm -f "${SERVICE_FILE}"
 # Remove the environment file
 echo "Removing environment file..."
 rm -f "${ENV_FILE}"
+
+# Remove the logrotate config (leave the log file itself in place)
+echo "Removing logrotate config..."
+rm -f "${LOGROTATE_FILE}"
 
 # Reload systemd
 echo "Reloading systemd daemon configuration..."
